@@ -322,9 +322,15 @@ mineysocket.authenticate = function(input, clientid, ip, port, socket)
     end
 end
 
+local json = minetest.write_json
 
 -- send data to the client
 mineysocket.send = function(clientid, data)
+  -- Convert data to a JSON string if it's a table
+  if type(data) == "table" then
+    data = json(data)
+  end
+
   local data = data .. socket_clients[clientid]["eom"]  -- eom is the terminator
   local size = string.len(data)
 
@@ -337,9 +343,9 @@ mineysocket.send = function(clientid, data)
     -- we split into multiple packages
     for i = 0, math.floor(size / chunk_size) do
       socket_clients[clientid].socket:send(
-        string.sub(data, i * chunk_size, chunk_size + (i * chunk_size) - 1)
+        string.sub(data, i * chunk_size + 1, (i + 1) * chunk_size)
       )
-      luasocket.sleep(0.001)  -- Or buffer fills to fast
+      luasocket.sleep(0.001)  -- Or buffer fills too fast
       -- todo: Protocol change, that every chunked message needs a response before sending the next
     end
   end
